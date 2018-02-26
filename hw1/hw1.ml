@@ -26,8 +26,6 @@ let rec mul x y =  match y with
 	Z -> Z
 	| S c -> add x (mul x c);;
 
-let rec div x = failwith "Not implemented";;
-
 let rec power x y = match y with
 	Z -> S Z
 	| S c -> mul x (power x c);;
@@ -58,60 +56,37 @@ type lambda = Var of string | Abs of string * lambda | App of lambda * lambda;;
                      
 let rec string_of_lambda x = match x with
 	Var x -> x
-	| Abs (x, y) -> "(%" ^ x ^ "." ^ string_of_lambda y ^ ")"
+	| Abs (x, y) -> "(\\" ^ x ^ "." ^ string_of_lambda y ^ ")"
 	| App (x, y) -> "(" ^ string_of_lambda x ^ " " ^ string_of_lambda y ^ ")";;
 
-let lambda_of_string s = 
-	let s = s ^ ";" in
-	let pos  = ref 0 in
-	let get() = s.[!pos] in
-	let next() = if !pos < String.length s - 1 then pos := !pos + 1 else failwith "oops" in
-	let eat x  = if get() <> x then failwith "stop eating" else next() in
-
-	let parse_ident_str()  = 
-		let rec  rec_parse s = 
-			if ((get() >='0') && (get() <= '9')) then
-				let cur_dig = get() in
-			 	next();
-				rec_parse  (s^ (String.make 1 (cur_dig))) 
-				else s in
-		let cur =  String.make 1 (get ()) in
-		next();
-		rec_parse cur in 
-	
-	let parse_ident() = 
-	        Var(parse_ident_str()) in
-
-	let rec parse_abs() = 
-		eat '\\';
-		let v = parse_ident_str () in
-		eat '.';
-		let l = parse_lambda() in
-		Abs(v, l) 
-
-	and  parse res  =  if ((!pos =  String.length s - 1) || ')' = get())
-				then res else  App(res, parse_lambda()) 
-	and parse_lambda() = 
-		match (get()) with 
-		'\\' -> (let res = parse_abs() in
-				parse res)
-		|'(' -> (eat '('; 
-			let res = parse_lambda() in
-			eat ')';
-			parse res)
-		|_   ->  (let res = parse_ident() in
-				parse res) in
-	parse_lambda();;
-
-
-
-
-
-
-
-
-
-
-
-
-
+let lambda_of_string str = 
+	let str = str ^ ";" in 
+	let pos = ref 0 in
+	let next () = if !pos < String.length str - 1 then pos := !pos +1 in
+	let rec whiteSpace ()= if ((str.[!pos] = ' ') && (!pos < String.length str - 1)) then (next (); whiteSpace()) in
+	let get () = whiteSpace(); str.[!pos] in
+	let get_with_WP () = str.[!pos] in
+	let eat x = if get_with_WP () = x then next () else failwith ("Unexpected symbols" ^ (String.make 1 (get_with_WP())) ^ string_of_int(!pos)) in
+	let rec string_eater tmpStr = 
+		if (get_with_WP ()) <>';' && (get_with_WP ()) <> ')' && (get_with_WP ()) <> ' ' && (get_with_WP ())<> '\\' && (get_with_WP ()) <> '(' && (get_with_WP ())<> '.' then (
+			let current = tmpStr ^ (String.make 1 (get_with_WP())) in next();
+			string_eater current
+			)
+		else tmpStr in
+		let rec parse () = 
+			let rec parse_conditional () =
+			match (get()) with
+				'(' -> bracket_parse ()
+				| '\\' -> parse_abs ()
+				|_ -> var_parse ()
+		
+		and bracket_parse () = eat '('; let tmp = parse() in eat ')'; tmp
+		and parse_abs () = eat '\\';let nameStr = string_eater "" in eat '.'; Abs(nameStr, parse())		
+		and var_parse () = Var(string_eater "") 		
+		and parse_app lam  = App(lam, parse_conditional())	in
+		let collector = ref (parse_conditional()) in
+		while (!pos < String.length str - 1&&(get() <> ')')) do
+			collector:=parse_app(!collector);
+		done;
+		!collector
+	in parse();;
