@@ -62,17 +62,16 @@ let rec string_of_lambda x = match x with
 let lambda_of_string str = 
 	let str = str ^ ";" in 
 	let pos = ref 0 in
-	let next () = if !pos < String.length str - 1 then pos := !pos +1 in
-	let rec whiteSpace ()= if ((str.[!pos] = ' ') && (!pos < String.length str - 1)) then (next (); whiteSpace()) in
-	let get () = whiteSpace(); str.[!pos] in
+	let next () = if !pos < String.length str - 1 then pos := !pos + 1 in
+	let rec WS () = if ((str.[!pos] = ' ') && (!pos < String.length str - 1)) then (next (); WS()) in
+	let get () = WS(); str.[!pos] in
 	let get_with_WP () = str.[!pos] in
 	let eat x = if get_with_WP () = x then next () else failwith ("Unexpected symbols" ^ (String.make 1 (get_with_WP())) ^ string_of_int(!pos)) in
-	let rec string_eater tmpStr = 
+	let rec string_eater s = 
 		if (get_with_WP ()) <>';' && (get_with_WP ()) <> ')' && (get_with_WP ()) <> ' ' && (get_with_WP ())<> '\\' && (get_with_WP ()) <> '(' && (get_with_WP ())<> '.' then (
-			let current = tmpStr ^ (String.make 1 (get_with_WP())) in next();
-			string_eater current
-			)
-		else tmpStr in
+			let current = s ^ (String.make 1 (get_with_WP())) in next();
+			string_eater current)
+		else s in
 		let rec parse () = 
 			let rec parse_conditional () =
 			match (get()) with
@@ -81,12 +80,12 @@ let lambda_of_string str =
 				|_ -> var_parse ()
 		
 		and bracket_parse () = eat '('; let tmp = parse() in eat ')'; tmp
-		and parse_abs () = eat '\\';let nameStr = string_eater "" in eat '.'; Abs(nameStr, parse())		
+		and parse_abs () = eat '\\'; let nameStr = string_eater "" in eat '.'; Abs(nameStr, parse())		
 		and var_parse () = Var(string_eater "") 		
 		and parse_app lam  = App(lam, parse_conditional())	in
-		let collector = ref (parse_conditional()) in
-		while (!pos < String.length str - 1&&(get() <> ')')) do
-			collector:=parse_app(!collector);
+		let coll = ref (parse_conditional()) in
+		while (!pos < String.length str - 1 && (get() <> ')')) do
+			coll := parse_app(!coll);
 		done;
-		!collector
+		!coll
 	in parse();;
