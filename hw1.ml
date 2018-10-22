@@ -1,37 +1,37 @@
 type peano = Z | S of peano;; (* òèïû íåîáõîäèìî êîïèðîâàòü â ðåàëèçàöèþ *)
 
 let rec peano_of_int x = match x with 
-	0 -> Z
+	  0 -> Z
 	| _ -> S(peano_of_int (x - 1));;
 
 let rec int_of_peano p = match p with
-    Z -> 0
+      Z -> 0
 	| S x -> 1 + int_of_peano x;;
 
 let rec inc x = S x;;
 
 let rec add x y = match y with
-	Z -> x
+	  Z -> x
 	| S c -> S(add x c);;
 
 let dec x = match x with
-    Z -> Z
+      Z -> Z
     | S b -> b;; 
 
 let rec sub x y = match y with
-	Z -> x
+	  Z -> x
 	| S c -> sub (dec x) c
 
 let rec mul x y =  match y with
-	Z -> Z
+	  Z -> Z
 	| S c -> add x (mul x c);;
 
 let rec power x y = match y with
-	Z -> S Z
+	  Z -> S Z
 	| S c -> mul x (power x c);;
 
 let rec reverse x y = match y with
-	[] -> x
+	  [] -> x
 	| head::tail -> reverse(head::x) tail;;
                      
 let rec rev x = reverse [] x;;
@@ -55,7 +55,7 @@ let rec merge_sort x =
 type lambda = Var of string | Abs of string * lambda | App of lambda * lambda;;
                      
 let rec string_of_lambda x = match x with
-	Var x -> x
+	  Var x -> x
 	| Abs (x, y) -> "(\\" ^ x ^ "." ^ string_of_lambda y ^ ")"
 	| App (x, y) -> "(" ^ string_of_lambda x ^ " " ^ string_of_lambda y ^ ")";;
 

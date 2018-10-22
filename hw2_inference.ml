@@ -36,12 +36,10 @@ let infer_simp_type a =
 	match solve_system sys with
 	None -> None
 	| Some expr -> 
-
 		let rec type_of_term a = match a with
 			Var x -> S_Elem x
 			| Fun(f, l :: r :: []) -> S_Arrow(type_of_term l, type_of_term r)
 			| _ -> failwith "unexpected algebraic term" in
-
 		Some (List.map (fun (str, term) -> (str, type_of_term term)) (List.map (fun (str, term) -> (str, apply_substitution expr term)) expr_type), 
 		let (_, tmp) = List.find (fun (str, term) -> str = "t" ^ "0") expr in type_of_term tmp);;
 
@@ -53,7 +51,7 @@ exception SystemException of string;;
 let algorithm_w hm_lam = 	
 	cnt := 0;
 
-	let rec impl hmlmb types = 
+	let rec algorithm_w_t hmlmb types = 
 		let rec try_to_subst s hmt set_of_vars = 
 			match hmt with
 		  	| HM_ForAll (x, y) -> HM_ForAll(x, try_to_subst s y (StringSet.add x set_of_vars))
@@ -82,12 +80,12 @@ let algorithm_w hm_lam =
 
 		let abs_case x y =
 	  		let fresh_type = HM_Elem (gen_fresh_name ()) in
-			let (hmt, types) = impl y (StringMap.add x fresh_type (StringMap.remove x types)) in
+			let (hmt, types) = algorithm_w_t y (StringMap.add x fresh_type (StringMap.remove x types)) in
 			(HM_Arrow(try_to_subst types fresh_type StringSet.empty, hmt), types) in
 
 		let app_case lhs rhs =
-		 	let (hmt_left, types_left) = impl lhs types in
-			let (hmt_right, types_right) = impl rhs (merge_subst types_left types) in
+		 	let (hmt_left, types_left) = algorithm_w_t lhs types in
+			let (hmt_right, types_right) = algorithm_w_t rhs (merge_subst types_left types) in
 			let fresh_type = HM_Elem (gen_fresh_name ()) in
 			let rec to_aterm hmt = 
 				match hmt with
@@ -120,9 +118,9 @@ let algorithm_w hm_lam =
 					| false -> StringSet.add x y
 					| true -> y)
 				(unblock hmt StringSet.empty) StringSet.empty) hmt in	
-	  		let (hmt1, types1) = impl y types in 
+	  		let (hmt1, types1) = algorithm_w_t y types in 
 			let fresh_types = merge_subst types1 types in 
-			let (hmt2, types2) = impl z (StringMap.add x (_add hmt1 fresh_types) (StringMap.remove x fresh_types)) in 
+			let (hmt2, types2) = algorithm_w_t z (StringMap.add x (_add hmt1 fresh_types) (StringMap.remove x fresh_types)) in 
 			(hmt2, combine_substs types2 types1) in
 
 		match hmlmb with
@@ -140,6 +138,6 @@ let algorithm_w hm_lam =
 		  	| HM_App (lhs, rhs) -> StringSet.union (f lhs set) (f rhs set)
 		  	| HM_Let (x, y, z) -> StringSet.union (f y set) (f z (StringSet.add x set)) in 
 		f x StringSet.empty) hm_lam) StringMap.empty in
-	try let (hmt, map) = impl hm_lam types in 
+	try let (hmt, map) = algorithm_w_t hm_lam types in 
 	Some (StringMap.bindings map, hmt) with
 	(SystemException sww) -> None;;
