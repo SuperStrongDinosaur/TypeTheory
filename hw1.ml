@@ -63,18 +63,16 @@ let lambda_of_string str =
 	let str = str ^ ";" in 
 	let pos = ref 0 in
 	let next () = if !pos < String.length str - 1 then pos := !pos + 1 in
-	let rec WS () = if ((str.[!pos] = ' ') && (!pos < String.length str - 1)) then (next (); WS()) in
-	let get () = WS(); str.[!pos] in
+	let rec ws () = if ((str.[!pos] = ' ') && (!pos < String.length str - 1)) then (next (); ws()) in
+	let get () = ws(); str.[!pos] in
 	let get_with_WP () = str.[!pos] in
 	let eat x = if get_with_WP () = x then next () else failwith ("Unexpected symbols" ^ (String.make 1 (get_with_WP())) ^ string_of_int(!pos)) in
 	let rec string_eater s = 
-		if (get_with_WP ()) <>';' && (get_with_WP ()) <> ')' && (get_with_WP ()) <> ' ' && (get_with_WP ())<> '\\' && (get_with_WP ()) <> '(' && (get_with_WP ())<> '.' then (
-			let current = s ^ (String.make 1 (get_with_WP())) in next();
-			string_eater current)
+		if (get_with_WP ()) <> ';' && (get_with_WP ()) <> ')' && (get_with_WP ()) <> ' ' && (get_with_WP ()) <> '\\' && (get_with_WP ()) <> '(' && (get_with_WP ()) <> '.' then 
+			(let current = s ^ (String.make 1 (get_with_WP())) in next(); string_eater current)
 		else s in
 		let rec parse () = 
-			let rec parse_conditional () =
-			match (get()) with
+			let rec parse_conditional () = match (get()) with
 				'(' -> bracket_parse ()
 				| '\\' -> parse_abs ()
 				|_ -> var_parse ()
